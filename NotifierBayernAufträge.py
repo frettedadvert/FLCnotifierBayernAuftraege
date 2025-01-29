@@ -49,14 +49,14 @@ def check_keywords_in_text(extracted_data, keywords):
         text = data["title"].lower()
         if any(keyword in text for keyword in lower_keywords):
             print(f"Relevant Match Found: {data['title']}")
-            relevant_matches.append({"part": data["title"], "date": data["date"]})
+            relevant_matches.append({"part": data["title"], "link": data["link"]})
     
     return relevant_matches
 
 def extract_titles_with_selenium(url):
     """
-    Extract titles and dates directly from a dynamically rendered webpage using Selenium.
-    Returns an array of dictionaries containing the title and corresponding date.
+    Extract titles and links directly from a dynamically rendered webpage using Selenium.
+    Returns an array of dictionaries containing the title and corresponding link.
     """
     extracted_data = []
     
@@ -87,18 +87,17 @@ def extract_titles_with_selenium(url):
         
         wait = WebDriverWait(driver, 30)
         title_elements = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "BekSummary")))
-        date_elements = wait.until(EC.presence_of_all_elements_located((By.CLASS_NAME, "dx-cell-focus-disabled")))
         
         print(f"Found {len(title_elements)} elements with class 'BekSummary'.")
         
-        for i, (title_element, date_element) in enumerate(zip(title_elements, date_elements), start=1):
+        for i, element in enumerate(title_elements, start=1):
             try:
-                title = title_element.text.strip()
-                date = date_element.text.strip()
+                title = element.text.strip()
+                link = element.get_attribute("href")
                 
                 if title:
-                    extracted_data.append({"title": title, "date": date})
-                    print(f"Extracted {i}: Title: {title}, Date: {date}")
+                    extracted_data.append({"title": title, "link": link})
+                    print(f"Extracted {i}: Title: {title}, Link: {link}")
                 else:
                     print(f"Skipped element {i} due to empty title.")
             except Exception as e:
@@ -113,14 +112,14 @@ def extract_titles_with_selenium(url):
     return extracted_data
 
 def send_email(new_matches):
-    """Send an email notification with titles and dates."""
+    """Send an email notification with titles and links."""
     subject = "Neue Ausschreibungen verfügbar!!"
     body = "Die folgenden neuen Übereinstimmungen wurden gefunden:\n\n"
     
     for match in new_matches:
         title = match.get("part", "No Title")
-        date = match.get("date", "No Date")
-        body += f"Title: {title}\nDate: {date}\n\n"
+        link = match.get("link", "No Link")
+        body += f"Title: {title}\nLink: https://www.auftraege.bayern.de/Dashboards/Dashboard_off?BL=09\n\n"
     
     try:
         yag = yagmail.SMTP(EMAIL_ADDRESS, EMAIL_PASSWORD)
@@ -159,3 +158,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
